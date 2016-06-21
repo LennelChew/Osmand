@@ -52,9 +52,27 @@ public class RouteResultPreparation {
 		}
 		
 		determineTurnsToMerge(ctx.leftSideNavigation, result);
+		ignorePrecedingStraightOnSameIntersection(ctx.leftSideNavigation, result);
 		justifyUTurns(ctx.leftSideNavigation, result);
 		addTurnInfoDescriptions(result);
 		return result;
+	}
+
+	private void ignorePrecedingStraightOnSameIntersection(boolean leftside, List<RouteSegmentResult> result) {
+		RouteSegmentResult nextSegment = null;
+		double dist = 0;
+		for (int i = result.size() - 1; i >= 0; i--) {
+			RouteSegmentResult currentSegment = result.get(i);
+			dist = currentSegment.getDistance();
+
+			//Issue 2571: Ignore TurnType.C if immediately followed by another turn in non-motorway cases, as these likely belong to the very same intersection
+			if (nextSegment != null && nextSegment.getTurnType().getValue() != TurnType.C &&
+					currentSegment.getTurnType().getValue() == TurnType.C &&
+					dist <= 70 && !isMotorway(currentSegment)) {
+				result.get(i).getTurnType().setSkipToSpeak(true);
+			}
+			nextSegment = currentSegment;
+		}
 	}
 
 	private void justifyUTurns(boolean leftSide, List<RouteSegmentResult> result) {
@@ -917,9 +935,6 @@ public class RouteResultPreparation {
 				}
 			}
 		}
-		// Issue 2571
-		// Is caused by not suppressing 'ghost turns' (rs.speak=false), either when lanes split with no action (go straight), or where a subsequent "regular" turn at the end of the turn lane will be announced anyway
-		// Having rs.speak=true in these cases inserts an extra intermediate route direction to "continue" (to the point of the ghost turn)
 		t.setSkipToSpeak(!rs.speak);
 		t.setLanes(rawLanes);
 		return t;
