@@ -60,15 +60,12 @@ public class RouteResultPreparation {
 
 	private void ignorePrecedingStraightOnSameIntersection(boolean leftside, List<RouteSegmentResult> result) {
 		RouteSegmentResult nextSegment = null;
-		double dist = 0;
 		for (int i = result.size() - 1; i >= 0; i--) {
 			RouteSegmentResult currentSegment = result.get(i);
-			dist = currentSegment.getDistance();
-
 			//Issue 2571: Ignore TurnType.C if immediately followed by another turn in non-motorway cases, as these likely belong to the very same intersection
 			if (nextSegment != null && nextSegment.getTurnType().getValue() != TurnType.C &&
 					currentSegment.getTurnType().getValue() == TurnType.C &&
-					dist <= 70 && !isMotorway(currentSegment)) {
+					currentSegment.getDistance() <= 70 && !isMotorway(currentSegment)) {
 				result.get(i).getTurnType().setSkipToSpeak(true);
 			}
 			nextSegment = currentSegment;
